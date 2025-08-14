@@ -1,5 +1,6 @@
-Flask>=2.3.0
+Flask>=3.0.0
 Werkzeug>=3.0.0
 pydub>=0.25.1
 assemblyai>=0.22.0
 google-generativeai>=0.3.2
+python-dotenv>=1.0.0
