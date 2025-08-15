@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
-SAVE_DIR = "DIR_TO_SAVE" # temporary directory, should be moved to server later
+SAVE_DIR = "generated_websites" # websites will be saved here
 # Model initialization
 model = genai.GenerativeModel('gemini-2.5-flash')
 

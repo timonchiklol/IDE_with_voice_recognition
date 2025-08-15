@@ -130,5 +130,262 @@
     "details": {
       "error": "404 models/gemini-pro is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."
     }
+  },
+  {
+    "timestamp": "2025-08-14 08:29:55 UTC",
+    "operation": "audio_processing_start",
+    "status": "success",
+    "details": {
+      "file": "20250814_082955_646347_recording.webm"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:30:01 UTC",
+    "operation": "speech_recognition",
+    "status": "success",
+    "details": {
+      "text_length": 34,
+      "text_preview": "Generate a website with portfolio."
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:30:09 UTC",
+    "operation": "gemini_request",
+    "status": "success",
+    "details": {
+      "original_length": 34,
+      "improved_length": 40,
+      "original_preview": "Generate a website with portfolio."
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:30:09 UTC",
+    "operation": "save_text",
+    "status": "success",
+    "details": {
+      "filename": "improved_text_20250814_083009_124882.txt",
+      "text_length": 40,
+      "text_preview": "Develop a website featuring a portfolio."
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:30:09 UTC",
+    "operation": "audio_cleanup",
+    "status": "success",
+    "details": {
+      "deleted_file": "20250814_082955_646347_recording.webm"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:30:09 UTC",
+    "operation": "audio_processing_complete",
+    "status": "success",
+    "details": {
+      "original_length": 34,
+      "improved_length": 40,
+      "saved_file": "improved_text_20250814_083009_124882.txt"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:30:09 UTC",
+    "operation": "generate_website",
+    "status": "success",
+    "details": {
+      "text_file": "improved_text_20250814_083009_124882.txt",
+      "process_id": 49208
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:31:08 UTC",
+    "operation": "save_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_083108_591328",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:31:13 UTC",
+    "operation": "load_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_083108_591328",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:31:26 UTC",
+    "operation": "load_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_083108_591328",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:35:42 UTC",
+    "operation": "load_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_083108_591328",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:35:59 UTC",
+    "operation": "download_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_083108_591328",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:36:45 UTC",
+    "operation": "delete_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_083108_591328",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:48 UTC",
+    "operation": "audio_processing_start",
+    "status": "success",
+    "details": {
+      "file": "20250814_085348_150083_recording.webm"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:53 UTC",
+    "operation": "speech_recognition",
+    "status": "success",
+    "details": {
+      "text_length": 0,
+      "text_preview": ""
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:59 UTC",
+    "operation": "gemini_request",
+    "status": "success",
+    "details": {
+      "original_length": 0,
+      "improved_length": 462,
+      "original_preview": ""
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:59 UTC",
+    "operation": "save_text",
+    "status": "success",
+    "details": {
+      "filename": "improved_text_20250814_085359_008078.txt",
+      "text_length": 462,
+      "text_preview": "I'm ready to help you improve your dictated text!\n\nIt seems, however, that the text you'd like me to..."
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:59 UTC",
+    "operation": "audio_cleanup",
+    "status": "success",
+    "details": {
+      "deleted_file": "20250814_085348_150083_recording.webm"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:59 UTC",
+    "operation": "audio_processing_complete",
+    "status": "success",
+    "details": {
+      "original_length": 0,
+      "improved_length": 462,
+      "saved_file": "improved_text_20250814_085359_008078.txt"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:53:59 UTC",
+    "operation": "generate_website",
+    "status": "success",
+    "details": {
+      "text_file": "improved_text_20250814_085359_008078.txt",
+      "process_id": 49691
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:54:09 UTC",
+    "operation": "save_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085409_702612",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:54:22 UTC",
+    "operation": "load_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085409_702612",
+      "name": "test",
+      "port": 8000
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:54:35 UTC",
+    "operation": "load_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085409_702612",
+      "name": "test",
+      "port": 8001
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:54:46 UTC",
+    "operation": "load_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085409_702612",
+      "name": "test",
+      "port": 8002
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:54:52 UTC",
+    "operation": "download_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085409_702612",
+      "name": "test"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:55:17 UTC",
+    "operation": "save_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085517_625974",
+      "name": "test 2"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:55:22 UTC",
+    "operation": "delete_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085517_625974",
+      "name": "test 2"
+    }
+  },
+  {
+    "timestamp": "2025-08-14 08:55:25 UTC",
+    "operation": "delete_website",
+    "status": "success",
+    "details": {
+      "website_id": "site_20250814_085409_702612",
+      "name": "test"
+    }
   }
 ]

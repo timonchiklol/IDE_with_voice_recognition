@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import os
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
@@ -15,11 +15,13 @@ UPLOAD_FOLDER = "uploads"
 IMPROVED_TEXTS_FOLDER = "improved_texts"
 LOGS_FOLDER = "logs"
 WEBSITES_FOLDER = "generated_websites"
+SAVED_WEBSITES_FOLDER = "saved_websites"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(IMPROVED_TEXTS_FOLDER, exist_ok=True)
 os.makedirs(LOGS_FOLDER, exist_ok=True)
 os.makedirs(WEBSITES_FOLDER, exist_ok=True)
+os.makedirs(SAVED_WEBSITES_FOLDER, exist_ok=True)
 
 
 def log_operation(operation: str, details: dict = None, status: str = "success"):
@@ -342,6 +344,57 @@ def process_audio(file_path: str):
     }
 
 
+def get_saved_websites_metadata():
+    """Get metadata for all saved websites."""
+    metadata_file = os.path.join(SAVED_WEBSITES_FOLDER, "metadata.json")
+    
+    if os.path.exists(metadata_file):
+        try:
+            with open(metadata_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            return {"websites": []}
+    else:
+        return {"websites": []}
+
+
+def save_websites_metadata(metadata):
+    """Save metadata for all saved websites."""
+    metadata_file = os.path.join(SAVED_WEBSITES_FOLDER, "metadata.json")
+    
+    try:
+        with open(metadata_file, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print(f"Failed to save metadata: {e}")
+        return False
+
+
+def get_latest_website_file():
+    """Get the path to the most recently generated website."""
+    try:
+        # Check DIR_TO_SAVE first (from TextToCode.py)
+        if os.path.exists("DIR_TO_SAVE"):
+            files = [f for f in os.listdir("DIR_TO_SAVE") if f.endswith('.html')]
+            if files:
+                files.sort(reverse=True)  # newest first
+                return os.path.join("DIR_TO_SAVE", files[0])
+        
+        # Check generated_websites folder
+        if os.path.exists(WEBSITES_FOLDER):
+            files = [f for f in os.listdir(WEBSITES_FOLDER) if f.endswith('.html')]
+            if files:
+                files.sort(reverse=True)
+                return os.path.join(WEBSITES_FOLDER, files[0])
+        
+        return None
+        
+    except Exception as e:
+        print(f"Error finding latest website: {e}")
+        return None
+
+
 @app.route("/")
 def index():
     """Return the main page."""
@@ -529,6 +582,350 @@ server_thread.join()
     except Exception as e:
         log_operation("edit_website_endpoint", {"error": str(e)}, "error")
         return jsonify({"error": f"Failed to edit website: {str(e)}"}), 500
+
+
+@app.route("/saved-websites")
+def get_saved_websites():
+    """Return list of saved websites."""
+    try:
+        metadata = get_saved_websites_metadata()
+        # Sort by creation date (newest first)
+        websites = sorted(metadata.get("websites", []), 
+                         key=lambda x: x.get("created_at", ""), reverse=True)
+        return jsonify({"websites": websites})
+    except Exception as e:
+        log_operation("get_saved_websites", {"error": str(e)}, "error")
+        return jsonify({"error": f"Failed to get saved websites: {str(e)}"}), 500
+
+
+@app.route("/save-website", methods=["POST"])
+def save_website():
+    """Save current website with a name."""
+    try:
+        data = request.get_json()
+        if not data or not data.get("name"):
+            return jsonify({"error": "Website name is required"}), 400
+        
+        website_name = data["name"].strip()
+        if not website_name:
+            return jsonify({"error": "Website name cannot be empty"}), 400
+        
+        # Find the latest website file
+        latest_website = get_latest_website_file()
+        if not latest_website or not os.path.exists(latest_website):
+            return jsonify({"error": "No website found to save"}), 400
+        
+        # Generate unique ID
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S_%f")
+        website_id = f"site_{timestamp}"
+        
+        # Read current website content
+        with open(latest_website, "r", encoding="utf-8") as f:
+            website_content = f.read()
+        
+        # Save website file
+        saved_file_path = os.path.join(SAVED_WEBSITES_FOLDER, f"{website_id}.html")
+        with open(saved_file_path, "w", encoding="utf-8") as f:
+            f.write(website_content)
+        
+        # Update metadata
+        metadata = get_saved_websites_metadata()
+        new_website = {
+            "id": website_id,
+            "name": website_name,
+            "created_at": datetime.utcnow().isoformat(),
+            "file_path": f"{website_id}.html"
+        }
+        
+        metadata["websites"].append(new_website)
+        
+        if save_websites_metadata(metadata):
+            log_operation("save_website", {
+                "website_id": website_id,
+                "name": website_name
+            })
+            
+            return jsonify({
+                "success": True,
+                "id": website_id,
+                "name": website_name,
+                "message": f"Website '{website_name}' saved successfully"
+            })
+        else:
+            return jsonify({"error": "Failed to save website metadata"}), 500
+        
+    except Exception as e:
+        log_operation("save_website", {"error": str(e)}, "error")
+        return jsonify({"error": f"Failed to save website: {str(e)}"}), 500
+
+
+def find_free_port(start_port=8000, max_port=8100):
+    """Find a free port starting from start_port."""
+    import socket
+    for port in range(start_port, max_port):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(('', port))
+                return port
+        except OSError:
+            continue
+    return None
+
+
+@app.route("/load-website/<website_id>")
+def load_website(website_id):
+    """Load a saved website."""
+    try:
+        print(f"Loading website with ID: {website_id}")
+        
+        # Get metadata
+        metadata = get_saved_websites_metadata()
+        websites = metadata.get("websites", [])
+        
+        print(f"Found {len(websites)} saved websites")
+        
+        # Find the website
+        website = None
+        for site in websites:
+            if site["id"] == website_id:
+                website = site
+                break
+        
+        if not website:
+            print(f"Website {website_id} not found")
+            return jsonify({"error": "Website not found"}), 404
+        
+        print(f"Found website: {website['name']}")
+        
+        # Check if file exists
+        website_file = os.path.join(SAVED_WEBSITES_FOLDER, website["file_path"])
+        print(f"Looking for file: {website_file}")
+        
+        if not os.path.exists(website_file):
+            print(f"Website file not found: {website_file}")
+            return jsonify({"error": "Website file not found"}), 404
+        
+        # Copy website to DIR_TO_SAVE so it can be opened
+        if not os.path.exists("DIR_TO_SAVE"):
+            os.makedirs("DIR_TO_SAVE", exist_ok=True)
+        
+        # Read saved website
+        with open(website_file, "r", encoding="utf-8") as f:
+            website_content = f.read()
+        
+        # Save to DIR_TO_SAVE with simple name  
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        new_filename = f"current_website.html"
+        new_path = os.path.join("DIR_TO_SAVE", new_filename)
+        
+        with open(new_path, "w", encoding="utf-8") as f:
+            f.write(website_content)
+        
+        print(f"Website copied to: {new_path}")
+        
+        # Find free port
+        port = find_free_port()
+        if not port:
+            port = 8000  # fallback
+        
+        print(f"Using port: {port}")
+        
+        # Start server using TextToCode logic
+        try:
+            # Use direct webbrowser opening first
+            import webbrowser
+            file_url = f"file://{os.path.abspath(new_path)}"
+            webbrowser.open(file_url)
+            print(f"Opened file directly: {file_url}")
+            
+            # Also try to start HTTP server
+            server_script = f"""
+import http.server
+import socketserver
+import webbrowser
+import threading
+import time
+import os
+
+os.chdir(r'{os.path.abspath("DIR_TO_SAVE")}')
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == "/" or self.path == "/index.html":
+            self.path = "/{new_filename}"
+        return super().do_GET()
+
+try:
+    with socketserver.TCPServer(("", {port}), Handler) as httpd:
+        print(f"HTTP Server started at http://localhost:{port}")
+        threading.Thread(target=lambda: (time.sleep(2), webbrowser.open(f"http://localhost:{port}")), daemon=True).start()
+        httpd.serve_forever()
+except Exception as e:
+    print(f"Server error: {{e}}")
+"""
+            
+            # Write and run server script
+            script_file = os.path.join("DIR_TO_SAVE", "temp_server.py")
+            with open(script_file, "w", encoding="utf-8") as f:
+                f.write(server_script)
+            
+            subprocess.Popen([sys.executable, script_file], 
+                           stdout=subprocess.PIPE, 
+                           stderr=subprocess.PIPE)
+            
+            print("HTTP server process started")
+            
+        except Exception as e:
+            print(f"Failed to start server: {e}")
+        
+        log_operation("load_website", {
+            "website_id": website_id,
+            "name": website["name"],
+            "port": port
+        })
+        
+        return jsonify({
+            "success": True,
+            "name": website["name"],
+            "id": website_id,
+            "port": port,
+            "message": f"Website '{website['name']}' loaded successfully"
+        })
+        
+    except Exception as e:
+        print(f"Error loading website: {e}")
+        import traceback
+        traceback.print_exc()
+        log_operation("load_website", {"error": str(e), "website_id": website_id}, "error")
+        return jsonify({"error": f"Failed to load website: {str(e)}"}), 500
+
+
+@app.route("/download-website/<website_id>")
+def download_website(website_id):
+    """Download a saved website file."""
+    try:
+        # Get metadata
+        metadata = get_saved_websites_metadata()
+        websites = metadata.get("websites", [])
+        
+        # Find the website
+        website = None
+        for site in websites:
+            if site["id"] == website_id:
+                website = site
+                break
+        
+        if not website:
+            return jsonify({"error": "Website not found"}), 404
+        
+        # Check if file exists
+        website_file = os.path.join(SAVED_WEBSITES_FOLDER, website["file_path"])
+        if not os.path.exists(website_file):
+            return jsonify({"error": "Website file not found"}), 404
+        
+        # Clean filename for download
+        safe_name = "".join(c for c in website["name"] if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        download_filename = f"{safe_name}.html"
+        
+        log_operation("download_website", {
+            "website_id": website_id,
+            "name": website["name"]
+        })
+        
+        return send_file(
+            website_file, 
+            as_attachment=True, 
+            download_name=download_filename,
+            mimetype='text/html'
+        )
+        
+    except Exception as e:
+        log_operation("download_website", {"error": str(e), "website_id": website_id}, "error")
+        return jsonify({"error": f"Failed to download website: {str(e)}"}), 500
+
+
+@app.route("/delete-website/<website_id>", methods=["DELETE"])
+def delete_website(website_id):
+    """Delete a saved website."""
+    try:
+        # Get metadata
+        metadata = get_saved_websites_metadata()
+        websites = metadata.get("websites", [])
+        
+        # Find the website
+        website = None
+        website_index = None
+        for i, site in enumerate(websites):
+            if site["id"] == website_id:
+                website = site
+                website_index = i
+                break
+        
+        if not website:
+            return jsonify({"error": "Website not found"}), 404
+        
+        # Delete website file
+        website_file = os.path.join(SAVED_WEBSITES_FOLDER, website["file_path"])
+        if os.path.exists(website_file):
+            os.remove(website_file)
+        
+        # Update metadata - remove website from list
+        websites.pop(website_index)
+        metadata["websites"] = websites
+        
+        if save_websites_metadata(metadata):
+            log_operation("delete_website", {
+                "website_id": website_id,
+                "name": website["name"]
+            })
+            
+            return jsonify({
+                "success": True,
+                "message": f"Website '{website['name']}' deleted successfully"
+            })
+        else:
+            return jsonify({"error": "Failed to update metadata"}), 500
+        
+    except Exception as e:
+        log_operation("delete_website", {"error": str(e), "website_id": website_id}, "error")
+        return jsonify({"error": f"Failed to delete website: {str(e)}"}), 500
+
+
+@app.route("/debug/websites")
+def debug_websites():
+    """Debug endpoint to check saved websites state."""
+    try:
+        debug_info = {}
+        
+        # Check folders
+        debug_info["folders"] = {
+            "SAVED_WEBSITES_FOLDER": {
+                "path": SAVED_WEBSITES_FOLDER,
+                "exists": os.path.exists(SAVED_WEBSITES_FOLDER),
+                "files": os.listdir(SAVED_WEBSITES_FOLDER) if os.path.exists(SAVED_WEBSITES_FOLDER) else []
+            },
+            "DIR_TO_SAVE": {
+                "path": "DIR_TO_SAVE",
+                "exists": os.path.exists("DIR_TO_SAVE"), 
+                "files": os.listdir("DIR_TO_SAVE") if os.path.exists("DIR_TO_SAVE") else []
+            }
+        }
+        
+        # Check metadata
+        metadata = get_saved_websites_metadata()
+        debug_info["metadata"] = metadata
+        
+        # Check latest website
+        latest = get_latest_website_file()
+        debug_info["latest_website"] = {
+            "path": latest,
+            "exists": os.path.exists(latest) if latest else False
+        }
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
